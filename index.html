@@ -3,84 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>純 API 元素查詢工具</title>
+    <title>元素 API 自動填入與建檔工具</title>
     <style>
-        /* 最基本的清楚排版 */
-        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
-        .search-box { display: flex; gap: 5px; margin-bottom: 20px; }
-        input { flex: 1; padding: 8px; font-size: 16px; }
-        button { padding: 8px 15px; cursor: pointer; font-size: 16px; }
-        .result-card { background: #f0f0f0; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
-        .error { color: red; }
+        body { font-family: system-ui, sans-serif; padding: 20px; max-width: 450px; margin: auto; background: #f5f7fa; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .row-flex { display: flex; gap: 10px; }
+        button { padding: 9px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-query { background: #007bff; color: white; white-space: nowrap; }
+        .btn-submit { background: #28a745; color: white; width: 100%; margin-top: 10px; font-size: 16px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .status-msg { margin-top: 15px; font-size: 14px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h2>🔍 元素 API 查詢器</h2>
+<div class="card">
+    <h2>🧪 元素資料自動建檔</h2>
     
-    <div class="search-box">
-        <input type="text" id="searchInput" placeholder="輸入名稱或原子序 (留空查全部)">
-        <button id="searchBtn">查詢</button>
+    <div class="form-group">
+        <label>1. 輸入原子序查詢 (例如: 1) </label>
+        <div class="row-flex">
+            <input type="number" id="atomicNumber" placeholder="請輸入原子序..." min="1" max="118">
+            <button type="button" id="queryBtn" class="btn-query">呼叫 API 自動填入</button>
+        </div>
     </div>
 
-    <div id="resultContainer">
-        <p style="color: gray;">請輸入關鍵字開始查詢...</p>
-    </div>
+    <hr style="border:0; border-top: 1px solid #eee; margin: 20px 0;">
 
-    <script>
-        // 【請在此替換你的 GAS Web App URL】
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwzJQfFH0XpPcrhmDP86qOd9aq9SAGkqQStJ3m2k04pbvfRTB4tWMtMQYCEWOqTQgO5/exec';
+    <form id="elementForm">
+        <div class="form-group">
+            <label>名稱 (Name)：</label>
+            <input type="text" id="name" required placeholder="自動填入欄位...">
+        </div>
+        <div class="form-group">
+            <label>原子量 (Atomic Weight)：</label>
+            <input type="text" id="atomicWeight" required placeholder="自動填入欄位...">
+        </div>
+        <div class="form-group">
+            <label>常溫常壓狀態 (State)：</label>
+            <input type="text" id="state" required placeholder="自動填入欄位...">
+        </div>
 
-        document.getElementById('searchBtn').addEventListener('click', () => {
-            const queryWord = document.getElementById('searchInput').value.trim();
-            const container = document.getElementById('resultContainer');
-            const btn = document.getElementById('searchBtn');
-            
-            // 狀態變更為查詢中
-            container.innerHTML = '<p>讀取 API 資料中...</p>';
-            btn.disabled = true;
+        <button type="submit" id="submitBtn" class="btn-submit">確認並存入 Google 試算表</button>
+    </form>
 
-            // 如果有輸入字，則將其編碼並加到網址後方當作 GET 參數
-            const fetchUrl = queryWord ? `${API_URL}?q=${encodeURIComponent(queryWord)}` : API_URL;
+    <div id="statusMsg" class="status-msg"></div>
+</div>
 
-            // 發送原生 GET 請求
-            fetch(fetchUrl)
-                .then(response => response.json())
-                .then(data => {
-                    container.innerHTML = ''; // 清空畫面
-                    
-                    // 錯誤處理
-                    if (data.error) {
-                        container.innerHTML = `<p class="error">API 錯誤：${data.error}</p>`;
-                        return;
-                    }
+<script>
+    // ⚠️ 請在此替換成你的 Google Apps Script Web App URL
+    const GAS_URL = 'YOUR_GAS_WEB_APP_URL';
 
-                    // 查無資料
-                    if (data.length === 0) {
-                        container.innerHTML = '<p>查無符合的元素。</p>';
-                        return;
-                    }
+    const queryBtn = document.getElementById('queryBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusMsg = document.getElementById('statusMsg');
 
-                    // 渲染資料
-                    data.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = 'result-card';
-                        card.innerHTML = `
-                            <strong>${item.name || '未知名稱'}</strong> (原子序: ${item.atomicNumber})<br>
-                            <small>原子量: ${item.atomicWeight} | 狀態: ${item.state}</small>
-                        `;
-                        container.appendChild(card);
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    container.innerHTML = '<p class="error">連線失敗，請檢查 API 網址與 Console 紀錄。</p>';
-                })
-                .finally(() => {
-                    // 恢復按鈕狀態
-                    btn.disabled = false;
-                });
-        });
-    </script>
+    // 功能一：呼叫公開 API 並自動填入表單
+    queryBtn.addEventListener('click', () => {
+        const num = document.getElementById('atomicNumber').value.trim();
+        if (!num) return alert('請先輸入原子序！');
+
+        queryBtn.disabled = true;
+        statusMsg.style.color = '#333';
+        statusMsg.innerText = '正在呼叫週期表 API...';
+
+        // 使用公開的週期表 JSON 庫作為 API 來源
+        fetch(`https://neelpatel05.pythonanywhere.com/element/atomicnumber/${num}`)
+            .then(res => {
+                if (!res.ok) throw new Error('找不到該元素');
+                return res.json();
+            })
+            .then(data => {
+                // 自動將 API 撈到的資料塞入對應的 Form Input 欄位
+                document.getElementById('name').value = `${data.name} (${data.symbol})`;
+                document.getElementById('atomicWeight').value = data.atomicMass;
+                document.getElementById('state').value = data.standardState || '未知';
+                
+                statusMsg.style.color = 'green';
+                statusMsg.innerText = `✨ 成功填入元素：${data.name}！`;
+            })
+            .catch(err => {
+                console.error(err);
+                statusMsg.style.color = 'red';
+                statusMsg.innerText = '❌ API 查詢失敗，請確認原子序是否在 1~118 之間。';
+            })
+            .finally(() => queryBtn.disabled = false);
+    });
+
+    // 功能二：將表單資料透過 GAS 存入 Google Spreadsheet
+    document.getElementById('elementForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        submitBtn.disabled = true;
+        statusMsg.style.color = '#333';
+        statusMsg.innerText = '正在將資料存入試算表...';
+
+        const payload = {
+            atomicNumber: document.getElementById('atomicNumber').value,
+            name: document.getElementById('name').value,
+            atomicWeight: document.getElementById('atomicWeight').value,
+            state: document.getElementById('state').value
+        };
+
+        // 以 text/plain 發送避免 CORS Preflight 阻擋，GAS 端能完美解析
+        fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.status === 'success') {
+                statusMsg.style.color = 'green';
+                statusMsg.innerText = '🎉 成功存入 Google 試算表！';
+                document.getElementById('elementForm').reset();
+                document.getElementById('atomicNumber').value = '';
+            } else {
+                throw new Error(resData.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            statusMsg.style.color = 'red';
+            statusMsg.innerText = '❌ 寫入試算表失敗，請檢查 GAS 部署權限。';
+        })
+        .finally(() => submitBtn.disabled = false);
+    });
+</script>
+
 </body>
 </html>
