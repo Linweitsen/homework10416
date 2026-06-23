@@ -4,133 +4,194 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>元素快速查詢與建檔系統</title>
-    <!-- 引入 Tailwind CSS 進行現代化美觀排版 -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 漸變背景與平滑過渡效果 */
+        /* 最基本的清楚排版，不使用任何外部 CSS 框架 */
         body {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            min-height: 100vh;
+            font-family: sans-serif;
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f4f5f7;
+            color: #333;
         }
-        .fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
+        .card {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #111;
+        }
+        h3 {
+            margin-top: 0;
+            color: #444;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        .input-readonly {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-blue {
+            background-color: #007bff;
+            color: white;
+            white-space: nowrap;
+        }
+        .btn-blue:hover {
+            background-color: #0056b3;
+        }
+        .btn-green {
+            background-color: #28a745;
+            color: white;
+            width: 100%;
+            font-size: 16px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        .btn-green:hover {
+            background-color: #218838;
+        }
+        .btn-indigo {
+            background-color: #6610f2;
+            color: white;
+            white-space: nowrap;
+        }
+        .btn-indigo:hover {
+            background-color: #520dc2;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            min-height: 20px;
+        }
+        .status-emerald { color: #28a745; }
+        .status-red { color: #dc3545; }
+        .status-amber { color: #ffc107; }
+        .status-gray { color: #6c757d; }
+        
+        hr {
+            margin: 25px 0;
+            border: 0;
+            border-top: 1px solid #dee2e6;
+        }
+        .result-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+            font-size: 14px;
+            display: none;
+        }
+        .result-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .result-item:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
-<body class="py-10 px-4">
+<body>
 
-    <div class="max-w-xl mx-auto">
-        <!-- 標題區 -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight flex items-center justify-center gap-2">
-                <span>🧪</span> 元素 API 查詢建檔系統
-            </h1>
-            <p class="text-sm text-gray-500 mt-2">基於 Google Sheets & Apps Script 自建雲端資料庫</p>
+    <div class="card">
+        <h2>🧪 元素 API 查詢建檔</h2>
+        
+        <!-- 步驟一：搜尋區塊 -->
+        <div class="form-group">
+            <label for="searchQuery">1. 輸入「元素代號」或「中文名稱」自動帶入</label>
+            <div class="row">
+                <input type="text" id="searchQuery" placeholder="例如：Fe 或 鐵" autocomplete="off">
+                <button type="button" id="queryBtn" class="btn-blue">自建 API 查詢</button>
+            </div>
         </div>
 
-        <!-- 主卡片容器 -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-8">
-            
-            <!-- 步驟一：搜尋區塊 -->
-            <div>
-                <label for="searchQuery" class="block text-sm font-bold text-gray-700 mb-2">
-                    1. 輸入「元素代號」或「中文名稱」自動帶入
-                </label>
-                <div class="flex gap-2">
-                    <div class="relative flex-1">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                            <!-- 放大鏡 SVG 圖示 -->
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        </span>
-                        <input type="text" id="searchQuery" 
-                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-700 placeholder-gray-400 font-medium"
-                               placeholder="例如：Fe、鐵 或 118" autocomplete="off">
-                    </div>
-                    <button type="button" id="queryBtn" 
-                            class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-md flex items-center gap-2">
-                        <span id="queryBtnText">自建 API 查詢</span>
-                    </button>
-                </div>
+        <hr>
+
+        <!-- 步驟二：自動帶入之結果表單 -->
+        <form id="elementForm">
+            <div class="form-group">
+                <label>原子序 (Atomic Number)</label>
+                <input type="number" id="atomicNumber" required readonly class="input-readonly" placeholder="自動帶入...">
+            </div>
+            <div class="form-group">
+                <label>元素名稱 (Name)</label>
+                <input type="text" id="name" required readonly class="input-readonly" placeholder="自動帶入...">
+            </div>
+            <div class="form-group">
+                <label>原子量 (Atomic Weight)</label>
+                <input type="text" id="atomicWeight" required readonly class="input-readonly" placeholder="自動帶入...">
+            </div>
+            <div class="form-group">
+                <label>常溫常壓狀態 (State)</label>
+                <input type="text" id="state" required readonly class="input-readonly" placeholder="自動帶入...">
             </div>
 
-            <hr class="border-gray-200">
+            <!-- 狀態訊息提示 -->
+            <div id="statusMessage" class="status"></div>
 
-            <!-- 步驟二：自動帶入之結果表單 -->
-            <form id="elementForm" class="space-y-5">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">原子序 (Atomic Number)</label>
-                        <input type="number" id="atomicNumber" required readonly 
-                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-semibold cursor-not-allowed outline-none" 
-                               placeholder="自動填入...">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">元素名稱 (Name)</label>
-                        <input type="text" id="name" required readonly 
-                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-semibold cursor-not-allowed outline-none" 
-                               placeholder="自動填入...">
-                    </div>
-                </div>
+            <button type="submit" id="submitBtn" class="btn-green" disabled>確認寫入 Google 試算表</button>
+        </form>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">原子量 (Atomic Weight)</label>
-                        <input type="text" id="atomicWeight" required readonly 
-                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-semibold cursor-not-allowed outline-none" 
-                               placeholder="自動填入...">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">常溫常壓狀態 (State)</label>
-                        <input type="text" id="state" required readonly 
-                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-semibold cursor-not-allowed outline-none" 
-                               placeholder="自動填入...">
-                    </div>
-                </div>
+        <hr>
 
-                <!-- 狀態訊息提示 -->
-                <div id="statusMessage" class="text-sm font-semibold text-center min-h-[20px] transition-all duration-300"></div>
-
-                <!-- 寫入按鈕 -->
-                <button type="submit" id="submitBtn" disabled
-                        class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all shadow-lg text-lg flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    確認寫入 Google 試算表
-                </button>
-            </form>
-
-            <hr class="border-gray-200">
-
-            <!-- 步驟三：線上歷史紀錄查詢 -->
-            <div class="space-y-4">
-                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <span>📋</span> 試算表已存資料查詢 (GET API)
-                </h3>
-                <div class="flex gap-2">
-                    <input type="text" id="apiSearchQuery" 
-                           class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-gray-700 text-sm placeholder-gray-400"
-                           placeholder="輸入名稱或原子序搜尋 (留空查全部)" autocomplete="off">
-                    <button type="button" id="apiSearchBtn" 
-                            class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-6 py-3 rounded-xl transition-all text-sm shadow-md">
-                        線上查詢
-                    </button>
-                </div>
-
-                <!-- 查詢結果列表 -->
-                <div id="apiResultContainer" class="bg-gray-50 border border-gray-200 rounded-xl max-h-60 overflow-y-auto p-4 space-y-2 hidden fade-in">
-                    <!-- 動態渲染結果 -->
-                </div>
+        <!-- 步驟三：線上歷史紀錄查詢 -->
+        <h3>📋 試算表已存資料查詢 (GET API)</h3>
+        <div class="form-group">
+            <div class="row">
+                <input type="text" id="apiSearchQuery" placeholder="輸入名稱或原子序搜尋 (留空查全部)" autocomplete="off">
+                <button type="button" id="apiSearchBtn" class="btn-indigo">線上查詢</button>
             </div>
-
         </div>
+        
+        <!-- 查詢結果列表 -->
+        <div id="apiResultContainer" class="result-box"></div>
     </div>
 
     <script>
         // ⚠️ 請在此處替換您部署好的 Google Apps Script 網頁應用程式網址 (結尾必須是 /exec)
-        const GAS_URL = 'YOUR_GAS_WEB_APP_URL';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxOAId7fekRrPv8Z9PGsrzGAm5kEeQOQxwrqc6Qjw9O-9iA-w0gDwul877FUgk0UJ__/exec';
 
         const queryBtn = document.getElementById('queryBtn');
         const submitBtn = document.getElementById('submitBtn');
@@ -143,12 +204,12 @@
             const inputVal = document.getElementById('searchQuery').value.trim();
             
             if (!inputVal) {
-                showStatus('⚠️ 請先輸入元素符號（如 Fe）或中文名稱（如 鐵）！', 'amber');
+                showStatus('⚠️ 請先輸入元素符號（如 Fe）或中文名稱（如 鐵）！', 'status-amber');
                 return;
             }
 
             queryBtn.disabled = true;
-            showStatus('🔍 正在向自建線上資料庫查詢元素...', 'gray');
+            showStatus('🔍 正在向自建線上資料庫查詢元素...', 'status-gray');
 
             // 呼叫自建的 GAS 118 官方元素庫，附帶 type=master 參數
             const fetchUrl = `${GAS_URL}?type=master&q=${encodeURIComponent(inputVal)}`;
@@ -163,7 +224,7 @@
 
                 if (!data || data.length === 0) {
                     clearForm();
-                    showStatus('❌ 自建資料庫中找不到此元素，請檢查拼字。', 'red');
+                    showStatus('❌ 自建資料庫中找不到此元素，請檢查拼字。', 'status-red');
                     return;
                 }
 
@@ -175,11 +236,11 @@
                 document.getElementById('state').value = matchedElement.state;
                 
                 submitBtn.disabled = false; // 開啟送出按鈕
-                showStatus(`✨ 查詢成功！已帶入元素：${matchedElement.name}`, 'emerald');
+                showStatus(`✨ 查詢成功！已帶入元素：${matchedElement.name}`, 'status-emerald');
             })
             .catch(err => {
                 console.error('API Error:', err);
-                showStatus('❌ 查詢失敗！請確認是否已建立「元素資料庫」工作表，且 GAS 已更新部署為新版本。', 'red');
+                showStatus('❌ 查詢失敗！請確認是否已建立「元素資料庫」工作表，且 GAS 已更新部署為新版本。', 'status-red');
             })
             .finally(() => {
                 queryBtn.disabled = false;
@@ -191,7 +252,7 @@
             e.preventDefault();
 
             submitBtn.disabled = true;
-            showStatus('⏳ 正在連線寫入試算表...', 'gray');
+            showStatus('⏳ 正在連線寫入試算表...', 'status-gray');
 
             const payload = {
                 atomicNumber: document.getElementById('atomicNumber').value,
@@ -212,7 +273,7 @@
             })
             .then(data => {
                 if (data.status === 'success') {
-                    showStatus('🎉 成功！資料已順利寫入 Google 試算表第一頁！', 'emerald');
+                    showStatus('🎉 成功！資料已順利寫入 Google 試算表第一頁！', 'status-emerald');
                     clearForm();
                     document.getElementById('searchQuery').value = '';
                 } else {
@@ -221,7 +282,7 @@
             })
             .catch(err => {
                 console.error('API Error:', err);
-                showStatus('❌ 寫入失敗，請確認您的 GAS 部署權限是否設為「所有人 (Anyone)」。', 'red');
+                showStatus('❌ 寫入失敗，請確認您的 GAS 部署權限是否設為「所有人 (Anyone)」。', 'status-red');
                 submitBtn.disabled = false;
             });
         });
@@ -230,8 +291,8 @@
         apiSearchBtn.addEventListener('click', () => {
             const queryVal = document.getElementById('apiSearchQuery').value.trim();
             
-            apiResultContainer.classList.remove('hidden');
-            apiResultContainer.innerHTML = '<div class="text-sm text-gray-500 py-2">🔍 正在即時自雲端讀取歷史紀錄...</div>';
+            apiResultContainer.style.display = 'block';
+            apiResultContainer.innerHTML = '🔍 正在即時自雲端讀取歷史紀錄...';
             apiSearchBtn.disabled = true;
 
             // 預設不帶 type 即為 history 歷史查詢
@@ -246,7 +307,7 @@
                 if (data.status === 'error') throw new Error(data.message);
                 
                 if (data.length === 0) {
-                    apiResultContainer.innerHTML = '<div class="text-sm text-gray-500 py-2">📭 試算表中目前沒有相符的歷史建檔紀錄。</div>';
+                    apiResultContainer.innerHTML = '📭 試算表中目前沒有相符的歷史建檔紀錄。';
                     return;
                 }
 
@@ -254,23 +315,14 @@
                 apiResultContainer.innerHTML = '';
                 data.forEach(item => {
                     const itemDiv = document.createElement('div');
-                    itemDiv.className = 'py-2.5 border-b border-gray-200 last:border-0 flex justify-between items-center text-sm';
-                    itemDiv.innerHTML = `
-                        <div class="font-semibold text-gray-800">${item.name}</div>
-                        <div class="text-xs text-gray-500 space-x-2">
-                            <span>序: ${item.atomicNumber}</span>
-                            <span>|</span>
-                            <span>重: ${item.atomicWeight}</span>
-                            <span>|</span>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] bg-indigo-50 text-indigo-600 font-bold">${item.state}</span>
-                        </div>
-                    `;
+                    itemDiv.className = 'result-item';
+                    itemDiv.innerHTML = `<strong>${item.name}</strong> (原子序: ${item.atomicNumber}) | 原子量: ${item.atomicWeight} | 狀態: ${item.state}`;
                     apiResultContainer.appendChild(itemDiv);
                 });
             })
             .catch(err => {
                 console.error('GET API Error:', err);
-                apiResultContainer.innerHTML = '<div class="text-sm text-red-600 font-semibold py-2">❌ 無法獲取試算表資料，請確認 GAS 網址是否正確並已發布新版本。</div>';
+                apiResultContainer.innerHTML = '<span class="status-red">❌ 無法獲取試算表資料，請確認 GAS 網址是否正確並已發布新版本。</span>';
             })
             .finally(() => {
                 apiSearchBtn.disabled = false;
@@ -278,18 +330,9 @@
         });
 
         // 輔助函式：狀態訊息控制
-        function showStatus(text, type) {
+        function showStatus(text, className) {
             statusMsg.innerText = text;
-            statusMsg.className = 'text-sm font-semibold text-center min-h-[20px] transition-all duration-300';
-            if (type === 'emerald') {
-                statusMsg.classList.add('text-emerald-600');
-            } else if (type === 'red') {
-                statusMsg.classList.add('text-red-600');
-            } else if (type === 'amber') {
-                statusMsg.classList.add('text-amber-600');
-            } else {
-                statusMsg.classList.add('text-gray-500');
-            }
+            statusMsg.className = 'status ' + className;
         }
 
         // 輔助函式：重置自動填入欄位
