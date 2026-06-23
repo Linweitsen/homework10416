@@ -40,7 +40,7 @@
         <label for="searchQuery">1. 輸入「元素代號」或「中文名稱」自動帶入</label>
         <div class="search-row">
             <input type="text" id="searchQuery" placeholder="例如：Fe 或 鐵" autocomplete="off">
-            <button type="button" id="queryBtn" class="btn-query">查詢並填入</button>
+            <button type="button" id="queryBtn" class="btn-query">線上 API 查詢</button>
         </div>
     </div>
 
@@ -87,7 +87,7 @@
     // ⚠️ 請將下方的網址替換為您在 Apps Script 部署得到的 Web App URL 網址 (結尾必為 /exec)
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxOAId7fekRrPv8Z9PGsrzGAm5kEeQOQxwrqc6Qjw9O-9iA-w0gDwul877FUgk0UJ__/exec';
 
-    // 極簡內建元素對照資料庫（涵蓋常見與基礎元素，已加入 118 號元素「鿫」）
+    // 極簡內建元素對照資料庫（用於識別輸入並作為線上 API 斷線時的本地備援）
     const elementDatabase = [
         { num: 1, sym: "H", cn: "氫", wt: 1.008, state: "氣態" },
         { num: 2, sym: "He", cn: "氦", wt: 4.0026, state: "氣態" },
@@ -121,13 +121,21 @@
         { num: 118, sym: "Og", cn: "鿫", wt: 294, state: "氣態/未知" }
     ];
 
+    // 線上 API 狀態中文翻譯對照
+    const stateTranslation = {
+        'gas': '氣態',
+        'liquid': '液態',
+        'solid': '固態',
+        'synthetic': '人造元素'
+    };
+
     const queryBtn = document.getElementById('queryBtn');
     const submitBtn = document.getElementById('submitBtn');
     const statusMsg = document.getElementById('statusMessage');
     const apiSearchBtn = document.getElementById('apiSearchBtn');
     const apiResultContainer = document.getElementById('apiResultContainer');
 
-    // 功能一：輸入代號或中文，點擊查詢後「自動填入」表單
+    // 功能一：輸入代號或中文，先找出目標，然後優先發送 fetch 向線上 API 查詢詳細數據
     queryBtn.addEventListener('click', () => {
         const inputVal = document.getElementById('searchQuery').value.trim().toLowerCase();
         
@@ -136,27 +144,58 @@
             return;
         }
 
-        // 搜尋資料庫（支援符號與中文精準或模糊搜尋）
+        // 步驟 1: 先在本地對照表中識別該元素
         const matchedElement = elementDatabase.find(el => 
             el.sym.toLowerCase() === inputVal || 
             el.cn === inputVal ||
             el.cn.includes(inputVal)
         );
 
-        if (matchedElement) {
-            // 自動帶入表單輸入框中
+        if (!matchedElement) {
+            clearForm();
+            showStatus('❌ 找不到符合的元素代號或中文名稱，請重新輸入。', 'red');
+            return;
+        }
+
+        queryBtn.disabled = true;
+        showStatus('🔍 正在連線線上週期表 API...', 'gray');
+
+        // 步驟 2: 呼叫免費開源的線上週期表資料庫 API (依據原子序)
+        fetch(`https://neelpatel05.pythonanywhere.com/element/atomicnumber/${matchedElement.num}`)
+        .then(res => {
+            if (!res.ok) throw new Error('線上資料庫無回應');
+            return res.json();
+        })
+        .then(apiData => {
+            // 成功取得線上資料：進行渲染與欄位自動帶入
+            document.getElementById('atomicNumber').value = apiData.atomicNumber;
+            document.getElementById('name').value = `${matchedElement.cn} (${apiData.symbol})`;
+            
+            // 處理線上原子量 (部分元素帶有不確定度括號，予以保留)
+            document.getElementById('atomicWeight').value = apiData.atomicMass;
+            
+            // 處理線上常溫常壓狀態 (英文轉中文翻譯)
+            const rawState = apiData.standardState ? apiData.standardState.toLowerCase() : '';
+            document.getElementById('state').value = stateTranslation[rawState] || matchedElement.state;
+
+            submitBtn.disabled = false; // 開啟送出按鈕
+            showStatus(`✨ 成功由線上 API 取得元素數據：${matchedElement.cn}！`, 'green');
+        })
+        .catch(err => {
+            // 備援機制：API 連線失敗時，自動採用本地資料庫數據填入
+            console.warn('線上 API 連線失敗，啟動本地備援機制：', err);
+            
             document.getElementById('atomicNumber').value = matchedElement.num;
             document.getElementById('name').value = `${matchedElement.cn} (${matchedElement.sym})`;
             document.getElementById('atomicWeight').value = matchedElement.wt;
             document.getElementById('state').value = matchedElement.state;
             
-            submitBtn.disabled = false; // 開啟送出按鈕
-            showStatus(`✨ 找到元素：${matchedElement.cn}，已自動填入資料！`, 'green');
-        } else {
-            // 清空表單並禁用按鈕
-            clearForm();
-            showStatus('❌ 找不到符合的元素資料，請重新輸入。', 'red');
-        }
+            submitBtn.disabled = false;
+            showStatus(`⚠️ 線上 API 離線，已自動啟動本地備援資料填入！`, 'orange');
+        })
+        .finally(() => {
+            queryBtn.disabled = false;
+        });
     });
 
     // 功能二：送出表單至 GAS (POST 請求)
@@ -261,10 +300,3 @@
 
 </body>
 </html>
-```
-eof
-
-### 🛠️ 變更摘要
-在 **Canvas** 文件的內建對照資料庫 `elementDatabase` 陣列末端，我已為您成功補上 **「鿫（Og）」** 的資料：
-```javascript
-{ num: 118, sym: "Og", cn: "鿫", wt: 294, state: "氣態/未知" }
