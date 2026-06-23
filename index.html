@@ -16,7 +16,13 @@
         .refresh-btn:hover { background-color: #218838; }
         #result { margin-top: 20px; padding: 15px; border-radius: 6px; border: 1px solid #ddd; background: #fafafa; display: none; line-height: 1.6; }
         .error-message { color: #e91e63; font-weight: bold; font-size: 16px; margin: 0; }
-        iframe { width: 100%; height: 300px; border: 1px solid #ddd; border-radius: 6px; margin-top: 15px; background: #fff; }
+        
+        /* 原生表格的專屬樣式 */
+        .sheet-container { max-height: 350px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; margin-top: 15px; background: #fff; }
+        .native-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .native-table th, .native-table td { border-bottom: 1px solid #eee; padding: 12px 10px; text-align: left; }
+        .native-table th { background-color: #f8f9fa; color: #333; position: sticky; top: 0; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1); }
+        .native-table tr:hover { background-color: #f1f7ff; }
     </style>
 </head>
 <body>
@@ -28,27 +34,27 @@
         <input type="text" id="elementInput" placeholder="輸入元素符號，如：He">
         <button onclick="queryElement()">查詢並寫入試算表</button>
 
-        <!-- 這裡就是用來顯示查詢結果的區塊 -->
         <div id="result"></div>
     </div>
 
-    <!-- 新增：顯示試算表的區塊 -->
     <div class="card">
         <h2>查詢紀錄試算表</h2>
-        <p style="color: #666; font-size: 14px; text-align: center;">此區塊同步顯示 Google 試算表內容</p>
+        <p style="color: #666; font-size: 14px; text-align: center;">原生表格顯示 (已避免 iframe 阻擋問題)</p>
         
-        <iframe id="sheetFrame" src="你的_試算表_發布網址"></iframe>
+        <!-- 替換 iframe，改用 div 容器來裝載我們生成的原生表格 -->
+        <div id="sheetData" class="sheet-container">
+            <div style="padding: 15px; text-align: center; color: #888;">尚未載入資料...</div>
+        </div>
         <button class="refresh-btn" onclick="refreshSheet()">手動重新整理試算表</button>
     </div>
 
     <script>
-        // ★ 請在這裡貼上新部署得到的 Google Apps Script 網頁應用程式網址 ★
+        // ★ 貼上您的 Google Apps Script 網頁應用程式網址 ★
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxP_Apql41mYl63jQc8V51b462kGotIWzwLwGE3sd5YggTu5zy2WhQO6q92pypPQYWS/exec'; 
         
-        // ★ 請在這裡貼上您的 Google 試算表共用連結 (請確保權限為：知道連結的人皆可查看) ★
+        // ★ 貼上您的 Google 試算表共用連結 (請確保權限設定為：知道連結的人皆可查看) ★
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/12Y4yHdO9kdid1nw5N0AW8ZqN5wcR9BMLEpb010ru3ow/edit?usp=sharing';
 
-        // 在頁面載入時初始化 iframe
         window.onload = function() {
             refreshSheet();
         };
@@ -68,9 +74,7 @@
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8'
-                    },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ query: query })
                 });
 
@@ -78,7 +82,6 @@
 
                 if (json.success) {
                     const data = json.data;
-                    // 【顯示元素資訊】這裡會將 GAS 回傳的資料顯示在畫面上
                     resultDiv.innerHTML = `
                         <h3 style="color: #28a745; margin-top: 0;">查詢成功</h3>
                         <p><strong>名稱：</strong> ${data.name}</p>
@@ -86,7 +89,7 @@
                         <p><strong>原子量：</strong> ${data.atomicMass}</p>
                         <p><strong>常溫常壓狀態：</strong> ${data.state}</p>
                     `;
-                    // 查詢成功後，自動延遲 1.5 秒更新試算表畫面 (等待 GAS 寫入完成)
+                    // 查詢成功後延遲 1.5 秒更新原生表格 (等待後端寫入完畢)
                     setTimeout(refreshSheet, 1500);
                 } else {
                     resultDiv.innerHTML = `<p class="error-message">${json.message}</p>`;
@@ -96,13 +99,60 @@
             }
         }
 
-        // 重新整理 iframe 內容的函式
-        function refreshSheet() {
-            const iframe = document.getElementById('sheetFrame');
-            if (SHEET_URL !== '你的_試算表_發布網址') {
-                // 加上時間戳記強制瀏覽器不使用快取，以獲取最新資料
-                const separator = SHEET_URL.includes('?') ? '&' : '?';
-                iframe.src = SHEET_URL + separator + 't=' + new Date().getTime();
+        // 使用其他方法：透過 Google Visualization API 解析試算表並生成原生表格
+        async function refreshSheet() {
+            const container = document.getElementById('sheetData');
+            
+            // 從一般共用連結中自動萃取出試算表 ID
+            const match = SHEET_URL.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (!match) {
+                if (SHEET_URL !== '你的_試算表_共用連結') {
+                    container.innerHTML = '<div style="padding: 15px; color: red;">無法解析試算表網址，請確認格式。</div>';
+                }
+                return;
+            }
+            const sheetId = match[1];
+            
+            // Google Visualization API 網址 (回傳類似 JSON 的資料)
+            const gvizUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+            try {
+                container.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">載入資料中...</div>';
+                
+                const response = await fetch(gvizUrl);
+                const text = await response.text();
+                
+                // 去除前後多餘字元，提取出標準 JSON 字串
+                const jsonString = text.match(/google\.visualization\.Query\.setResponse\(([\s\S\w]+)\);/)[1];
+                const data = JSON.parse(jsonString);
+
+                // 組合 HTML 原生表格
+                let html = '<table class="native-table"><thead><tr>';
+                
+                // 產生表頭
+                data.table.cols.forEach(col => {
+                    html += `<th>${col.label || col.id || ''}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                // 產生資料列 (這裡使用 reverse() 將最新的查詢紀錄顯示在最上面)
+                const rows = data.table.rows;
+                [...rows].reverse().forEach(row => {
+                    html += '<tr>';
+                    const cells = row.c || [];
+                    cells.forEach(cell => {
+                        // 優先顯示格式化過的數值 (cell.f)，若無則顯示原始值 (cell.v)
+                        const cellValue = cell ? (cell.f || cell.v || '') : '';
+                        html += `<td>${cellValue}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div style="padding: 15px; color: red;">❌ 無法讀取試算表。<br>請確保您的試算表共用權限已設為「知道連結的人皆可查看」。</div>`;
+                console.error("試算表讀取錯誤:", error);
             }
         }
     </script>
