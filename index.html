@@ -3,83 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>元素資料建檔工具</title>
+    <title>元素資料建檔與查詢工具</title>
     <style>
-        /* 極簡排版 */
         body { font-family: sans-serif; padding: 20px; max-width: 400px; }
         div { margin-bottom: 10px; }
         label { display: block; margin-bottom: 5px; }
         input { width: 100%; padding: 5px; box-sizing: border-box; }
-        button { padding: 8px 15px; cursor: pointer; }
+        button { padding: 8px 15px; cursor: pointer; margin-top: 5px; }
+        hr { margin: 30px 0; border: 0; border-top: 1px solid #ccc; }
+        .result-box { background: #f9f9f9; padding: 10px; margin-top: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
     <h2>新增元素資料</h2>
     <form id="elementForm">
-        <div>
-            <label>原子序：</label>
-            <input type="number" id="atomicNumber" required>
-        </div>
-        <div>
-            <label>原子量：</label>
-            <input type="number" step="0.001" id="atomicWeight" required>
-        </div>
-        <div>
-            <label>常溫常壓狀態：</label>
-            <input type="text" id="state" placeholder="例如：固態、液態、氣態" required>
-        </div>
-        <div>
-            <label>名稱：</label>
-            <input type="text" id="name" placeholder="例如：氫 (H)" required>
-        </div>
         <button type="submit" id="submitBtn">送出寫入試算表</button>
     </form>
 
+    <hr>
+
+    <h2>查詢元素</h2>
+    <div>
+        <input type="text" id="searchInput" placeholder="輸入元素名稱或原子序 (留空則查詢全部)">
+        <button type="button" id="searchBtn">使用 API 查詢</button>
+    </div>
+    <div id="searchResult" class="result-box">查詢結果會顯示在這裡...</div>
+
     <script>
-        // 請將下方引號內的網址替換為你剛剛複製的 GAS Web App URL
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwQCtLsLbD9iDG0ql4kwTr8tZ8ON9kXDKTnpwab8g_oW4pnGl1tTBVym9SpGkgYSBLB/exec';
+        // 替換為你的 GAS Web App URL
+        const GAS_URL = '請貼上_你的_GAS_Web_App_URL';
 
+        // --- 寫入功能 (POST) 保持原樣 ---
         document.getElementById('elementForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // 阻止表單預設重整行為
+            // ... (保留你原本的 POST 程式碼) ...
+        });
+
+        // --- 查詢功能 (GET) 新增 ---
+        document.getElementById('searchBtn').addEventListener('click', function() {
+            const queryWord = document.getElementById('searchInput').value.trim();
+            const resultBox = document.getElementById('searchResult');
+            const btn = document.getElementById('searchBtn');
             
-            const btn = document.getElementById('submitBtn');
             btn.disabled = true;
-            btn.innerText = "寫入中...";
+            resultBox.innerText = "正在透過 API 查詢中...";
 
-            // 收集表單資料
-            const payload = {
-                atomicNumber: document.getElementById('atomicNumber').value,
-                atomicWeight: document.getElementById('atomicWeight').value,
-                state: document.getElementById('state').value,
-                name: document.getElementById('name').value
-            };
+            // 組合 API 網址，將關鍵字附加在 URL 後方作為參數
+            const apiUrl = queryWord ? `${GAS_URL}?query=${encodeURIComponent(queryWord)}` : GAS_URL;
 
-            // 使用原生 fetch 送出 POST 請求
-            fetch(GAS_URL, {
-                method: 'POST',
-                // 注意：這裡必須使用 text/plain，否則瀏覽器會發送 CORS Preflight (OPTIONS) 請求，GAS 會攔截報錯
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify(payload)
-            })
+            // 原生 fetch GET 請求 (不寫 method 預設就是 GET)
+            fetch(apiUrl)
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    alert('資料成功寫入試算表！');
-                    document.getElementById('elementForm').reset();
-                } else {
-                    alert('寫入失敗：' + data.message);
+                if (data.length === 0) {
+                    resultBox.innerText = "找不到符合的元素資料。";
+                    return;
                 }
+                
+                // 清空並組合結果
+                resultBox.innerHTML = ""; 
+                data.forEach(item => {
+                    resultBox.innerHTML += `<p><strong>${item.name}</strong><br>
+                                            原子序: ${item.atomicNumber} | 
+                                            原子量: ${item.atomicWeight} | 
+                                            狀態: ${item.state}</p>`;
+                });
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('發生錯誤，請檢查 Console 紀錄。');
+                console.error('API 錯誤:', error);
+                resultBox.innerText = "查詢失敗，請檢查網頁 Console。";
             })
             .finally(() => {
                 btn.disabled = false;
-                btn.innerText = "送出寫入試算表";
             });
         });
     </script>
