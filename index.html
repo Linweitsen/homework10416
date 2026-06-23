@@ -9,6 +9,7 @@
         body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; max-width: 480px; margin: auto; background-color: #f3f4f6; color: #1f2937; }
         .card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-top: 20px; }
         h2 { margin-top: 0; color: #111827; font-size: 1.5rem; text-align: center; }
+        h3 { margin-top: 0; color: #374151; font-size: 1.1rem; }
         .form-group { margin-bottom: 16px; }
         label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: #374151; }
         input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
@@ -19,9 +20,14 @@
         .btn-query:hover { background-color: #1d4ed8; }
         .btn-submit { background-color: #10b981; color: white; width: 100%; margin-top: 10px; font-size: 1.05rem; }
         .btn-submit:hover { background-color: #059669; }
+        .btn-search-api { background-color: #4f46e5; color: white; white-space: nowrap; }
+        .btn-search-api:hover { background-color: #4338ca; }
         button:disabled { background-color: #9ca3af; cursor: not-allowed; }
         .status { margin-top: 16px; text-align: center; font-weight: bold; font-size: 0.95rem; min-height: 24px; }
         .divider { border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+        .result-list { background: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb; max-height: 200px; overflow-y: auto; font-size: 0.9rem; }
+        .result-item { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
+        .result-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -31,7 +37,7 @@
     
     <!-- 搜尋區塊：輸入中文或代號自動查詢並填入 -->
     <div class="form-group">
-        <label for="searchQuery">1. 輸入「元素代號」或「中文名稱」</label>
+        <label for="searchQuery">1. 輸入「元素代號」或「中文名稱」自動帶入</label>
         <div class="search-row">
             <input type="text" id="searchQuery" placeholder="例如：Fe 或 鐵" autocomplete="off">
             <button type="button" id="queryBtn" class="btn-query">查詢並填入</button>
@@ -63,13 +69,25 @@
     </form>
 
     <div id="statusMessage" class="status"></div>
+
+    <hr class="divider">
+
+    <!-- 已建檔試算表線上查詢 (API GET) -->
+    <h3>📋 試算表已存資料查詢 (GET API)</h3>
+    <div class="form-group">
+        <div class="search-row">
+            <input type="text" id="apiSearchQuery" placeholder="輸入名稱或原子序進行搜尋 (留空則查全部)" autocomplete="off">
+            <button type="button" id="apiSearchBtn" class="btn-search-api">線上查詢</button>
+        </div>
+    </div>
+    <div id="apiResultContainer" class="result-list" style="display: none;"></div>
 </div>
 
 <script>
-    // ⚠️ 請將下方的網址替換為您在第一步中複製的 GAS Web App URL 網址 (結尾必為 /exec)
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzQ2FzxogRyVBF5OE5PLjIajAHOjOiFaaoEZqUI4cjaJfRK9eVB6em2Xwg0FPThBsgt/exec';
+    // ⚠️ 請將下方的網址替換為您在 Apps Script 部署得到的 Web App URL 網址 (結尾必為 /exec)
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxOAId7fekRrPv8Z9PGsrzGAm5kEeQOQxwrqc6Qjw9O-9iA-w0gDwul877FUgk0UJ__/exec';
 
-    // 極簡內建元素對照資料庫（涵蓋常見與基礎元素，可擴充）
+    // 極簡內建元素對照資料庫（涵蓋常見與基礎元素，可自行在此擴充）
     const elementDatabase = [
         { num: 1, sym: "H", cn: "氫", wt: 1.008, state: "氣態" },
         { num: 2, sym: "He", cn: "氦", wt: 4.0026, state: "氣態" },
@@ -105,6 +123,8 @@
     const queryBtn = document.getElementById('queryBtn');
     const submitBtn = document.getElementById('submitBtn');
     const statusMsg = document.getElementById('statusMessage');
+    const apiSearchBtn = document.getElementById('apiSearchBtn');
+    const apiResultContainer = document.getElementById('apiResultContainer');
 
     // 功能一：輸入代號或中文，點擊查詢後「自動填入」表單
     queryBtn.addEventListener('click', () => {
@@ -138,7 +158,7 @@
         }
     });
 
-    // 功能二：送出表單至 GAS
+    // 功能二：送出表單至 GAS (POST 請求)
     document.getElementById('elementForm').addEventListener('submit', (e) => {
         e.preventDefault();
 
@@ -154,7 +174,6 @@
         };
 
         // 發送 POST 請求至 GAS Web App 網址
-        // 使用 text/plain 來規避複雜的 CORS OPTIONS 預檢，這是最極簡且穩定的做法！
         fetch(GAS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -177,6 +196,48 @@
             console.error('API Error:', err);
             showStatus('❌ 寫入失敗，請確認您的 GAS 部署權限是否設為「所有人 (Anyone)」。', 'red');
             submitBtn.disabled = false;
+        });
+    });
+
+    // 功能三：呼叫 GAS GET API 線上查詢試算表資料
+    apiSearchBtn.addEventListener('click', () => {
+        const queryVal = document.getElementById('apiSearchQuery').value.trim();
+        
+        apiResultContainer.style.display = 'block';
+        apiResultContainer.innerHTML = '🔍 正在從試算表即時讀取資料...';
+        apiSearchBtn.disabled = true;
+
+        // 組合網址，若有查詢關鍵字則帶上參數 ?q=
+        const fetchUrl = queryVal ? `${GAS_URL}?q=${encodeURIComponent(queryVal)}` : GAS_URL;
+
+        fetch(fetchUrl)
+        .then(res => {
+            if (!res.ok) throw new Error('連線失敗');
+            return res.json();
+        })
+        .then(data => {
+            if (data.status === 'error') throw new Error(data.message);
+            
+            if (data.length === 0) {
+                apiResultContainer.innerHTML = '📭 試算表中沒有符合的建檔資料。';
+                return;
+            }
+
+            // 渲染資料清單
+            apiResultContainer.innerHTML = '';
+            data.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'result-item';
+                itemDiv.innerHTML = `<strong>${item.name}</strong> (原子序: ${item.atomicNumber}) | 原子量: ${item.atomicWeight} | 狀態: ${item.state}`;
+                apiResultContainer.appendChild(itemDiv);
+            });
+        })
+        .catch(err => {
+            console.error('GET API Error:', err);
+            apiResultContainer.innerHTML = '<span style="color: #dc2626;">❌ 無法獲取試算表資料，請確認 GAS 是否重新部署並設為「新版本」。</span>';
+        })
+        .finally(() => {
+            apiSearchBtn.disabled = false;
         });
     });
 
