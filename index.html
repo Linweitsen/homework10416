@@ -3,300 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>元素查詢與自動建檔工具</title>
+    <title>元素快速查詢與建檔系統</title>
+    <!-- 引入 Tailwind CSS 進行現代化美觀排版 -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 極簡與現代感兼具的原生 CSS 排版 */
-        body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; max-width: 480px; margin: auto; background-color: #f3f4f6; color: #1f2937; }
-        .card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-top: 20px; }
-        h2 { margin-top: 0; color: #111827; font-size: 1.5rem; text-align: center; }
-        h3 { margin-top: 0; color: #374151; font-size: 1.1rem; }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: #374151; }
-        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; }
-        input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-        .search-row { display: flex; gap: 8px; }
-        button { padding: 10px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; }
-        .btn-query { background-color: #2563eb; color: white; white-space: nowrap; }
-        .btn-query:hover { background-color: #1d4ed8; }
-        .btn-submit { background-color: #10b981; color: white; width: 100%; margin-top: 10px; font-size: 1.05rem; }
-        .btn-submit:hover { background-color: #059669; }
-        .btn-search-api { background-color: #4f46e5; color: white; white-space: nowrap; }
-        .btn-search-api:hover { background-color: #4338ca; }
-        button:disabled { background-color: #9ca3af; cursor: not-allowed; }
-        .status { margin-top: 16px; text-align: center; font-weight: bold; font-size: 0.95rem; min-height: 24px; }
-        .divider { border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0; }
-        .result-list { background: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb; max-height: 200px; overflow-y: auto; font-size: 0.9rem; }
-        .result-item { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
-        .result-item:last-child { border-bottom: none; }
+        /* 漸變背景與平滑過渡效果 */
+        body {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            min-height: 100vh;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body>
+<body class="py-10 px-4">
 
-<div class="card">
-    <h2>🧪 元素 API 查詢建檔</h2>
-    
-    <!-- 搜尋區塊：輸入中文或代號自動查詢並填入 -->
-    <div class="form-group">
-        <label for="searchQuery">1. 輸入「元素代號」或「中文名稱」自動帶入</label>
-        <div class="search-row">
-            <input type="text" id="searchQuery" placeholder="例如：Fe 或 鐵" autocomplete="off">
-            <button type="button" id="queryBtn" class="btn-query">線上 API 查詢</button>
+    <div class="max-w-xl mx-auto">
+        <!-- 標題區 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight flex items-center justify-center gap-2">
+                <span>🧪</span> 元素 API 查詢建檔系統
+            </h1>
+            <p class="text-sm text-gray-500 mt-2">基於 Google Sheets & Apps Script 自建雲端資料庫</p>
+        </div>
+
+        <!-- 主卡片容器 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-8">
+            
+            <!-- 步驟一：搜尋區塊 -->
+            <div>
+                <label for="searchQuery" class="block text-sm font-bold text-gray-700 mb-2">
+                    1. 輸入「元素代號」或「中文名稱」自動帶入
+                </label>
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                            <!-- 放大鏡 SVG 圖示 -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </span>
+                        <input type="text" id="searchQuery" 
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-700 placeholder-gray-400 font-medium"
+                               placeholder="例如：Fe、鐵 或 118" autocomplete="off">
+                    </div>
+                    <button type="button" id="queryBtn" 
+                            class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-md flex items-center gap-2">
+                        <span id="queryBtnText">自建 API 查詢</span>
+                    </button>
+                </div>
+            </div>
+
+            <hr class="border-gray-200">
+
+            <!-- 步驟二：自動帶入之結果表單 -->
+            <form id="elementForm" class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">原子序 (Atomic Number)</label>
+                        <input type="number" id="atomicNumber" required readonly 
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-semibold cursor-not-allowed outline-none" 
+                               placeholder="自動填入...">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">元素名稱 (Name)</label>
+                        <input type="text" id="name" required readonly 
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-semibold cursor-not-allowed outline-none" 
+                               placeholder="自動填入...">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">原子量 (Atomic Weight)</label>
+                        <input type="text" id="atomicWeight" required readonly 
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-semibold cursor-not-allowed outline-none" 
+                               placeholder="自動填入...">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">常溫常壓狀態 (State)</label>
+                        <input type="text" id="state" required readonly 
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-semibold cursor-not-allowed outline-none" 
+                               placeholder="自動填入...">
+                    </div>
+                </div>
+
+                <!-- 狀態訊息提示 -->
+                <div id="statusMessage" class="text-sm font-semibold text-center min-h-[20px] transition-all duration-300"></div>
+
+                <!-- 寫入按鈕 -->
+                <button type="submit" id="submitBtn" disabled
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all shadow-lg text-lg flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    確認寫入 Google 試算表
+                </button>
+            </form>
+
+            <hr class="border-gray-200">
+
+            <!-- 步驟三：線上歷史紀錄查詢 -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <span>📋</span> 試算表已存資料查詢 (GET API)
+                </h3>
+                <div class="flex gap-2">
+                    <input type="text" id="apiSearchQuery" 
+                           class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-gray-700 text-sm placeholder-gray-400"
+                           placeholder="輸入名稱或原子序搜尋 (留空查全部)" autocomplete="off">
+                    <button type="button" id="apiSearchBtn" 
+                            class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-6 py-3 rounded-xl transition-all text-sm shadow-md">
+                        線上查詢
+                    </button>
+                </div>
+
+                <!-- 查詢結果列表 -->
+                <div id="apiResultContainer" class="bg-gray-50 border border-gray-200 rounded-xl max-h-60 overflow-y-auto p-4 space-y-2 hidden fade-in">
+                    <!-- 動態渲染結果 -->
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <hr class="divider">
+    <script>
+        // ⚠️ 請在此處替換您部署好的 Google Apps Script 網頁應用程式網址 (結尾必須是 /exec)
+        const GAS_URL = 'YOUR_GAS_WEB_APP_URL';
 
-    <!-- 自動填入的結果表單：確認後送出至試算表 -->
-    <form id="elementForm">
-        <div class="form-group">
-            <label>原子序 (Atomic Number)</label>
-            <input type="number" id="atomicNumber" required readonly placeholder="自動帶入..." style="background: #f9fafb; cursor: not-allowed;">
-        </div>
-        <div class="form-group">
-            <label>元素名稱 (Name)</label>
-            <input type="text" id="name" required readonly placeholder="自動帶入..." style="background: #f9fafb; cursor: not-allowed;">
-        </div>
-        <div class="form-group">
-            <label>原子量 (Atomic Weight)</label>
-            <input type="text" id="atomicWeight" required readonly placeholder="自動帶入..." style="background: #f9fafb; cursor: not-allowed;">
-        </div>
-        <div class="form-group">
-            <label>常溫常壓狀態 (State)</label>
-            <input type="text" id="state" required readonly placeholder="自動帶入..." style="background: #f9fafb; cursor: not-allowed;">
-        </div>
+        const queryBtn = document.getElementById('queryBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMsg = document.getElementById('statusMessage');
+        const apiSearchBtn = document.getElementById('apiSearchBtn');
+        const apiResultContainer = document.getElementById('apiResultContainer');
 
-        <button type="submit" id="submitBtn" class="btn-submit" disabled>確認寫入 Google 試算表</button>
-    </form>
-
-    <div id="statusMessage" class="status"></div>
-
-    <hr class="divider">
-
-    <!-- 已建檔試算表線上查詢 (API GET) -->
-    <h3>📋 試算表已存資料查詢 (GET API)</h3>
-    <div class="form-group">
-        <div class="search-row">
-            <input type="text" id="apiSearchQuery" placeholder="輸入名稱或原子序進行搜尋 (留空則查全部)" autocomplete="off">
-            <button type="button" id="apiSearchBtn" class="btn-search-api">線上查詢</button>
-        </div>
-    </div>
-    <div id="apiResultContainer" class="result-list" style="display: none;"></div>
-</div>
-
-<script>
-    // ⚠️ 請將下方的網址替換為您在 Apps Script 部署得到的 Web App URL 網址 (結尾必為 /exec)
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxOAId7fekRrPv8Z9PGsrzGAm5kEeQOQxwrqc6Qjw9O-9iA-w0gDwul877FUgk0UJ__/exec';
-
-    // 極簡內建元素對照資料庫（用於識別輸入並作為線上 API 斷線時的本地備援）
-    const elementDatabase = [
-        { num: 1, sym: "H", cn: "氫", wt: 1.008, state: "氣態" },
-        { num: 2, sym: "He", cn: "氦", wt: 4.0026, state: "氣態" },
-        { num: 3, sym: "Li", cn: "鋰", wt: 6.94, state: "固態" },
-        { num: 4, sym: "Be", cn: "鈹", wt: 9.0122, state: "固態" },
-        { num: 5, sym: "B", cn: "硼", wt: 10.81, state: "固態" },
-        { num: 6, sym: "C", cn: "碳", wt: 12.011, state: "固態" },
-        { num: 7, sym: "N", cn: "氮", wt: 14.007, state: "氣態" },
-        { num: 8, sym: "O", cn: "氧", wt: 15.999, state: "氣態" },
-        { num: 9, sym: "F", cn: "氟", wt: 18.998, state: "氣態" },
-        { num: 10, sym: "Ne", cn: "氖", wt: 20.180, state: "氣態" },
-        { num: 11, sym: "Na", cn: "鈉", wt: 22.990, state: "固態" },
-        { num: 12, sym: "Mg", cn: "鎂", wt: 24.305, state: "固態" },
-        { num: 13, sym: "Al", cn: "鋁", wt: 26.982, state: "固態" },
-        { num: 14, sym: "Si", cn: "矽", wt: 28.085, state: "固態" },
-        { num: 15, sym: "P", cn: "磷", wt: 30.974, state: "固態" },
-        { num: 16, sym: "S", cn: "硫", wt: 32.06, state: "固態" },
-        { num: 17, sym: "Cl", cn: "氯", wt: 35.45, state: "氣態" },
-        { num: 18, sym: "Ar", cn: "氬", wt: 39.948, state: "氣態" },
-        { num: 19, sym: "K", cn: "鉀", wt: 39.098, state: "固態" },
-        { num: 20, sym: "Ca", cn: "鈣", wt: 40.078, state: "固態" },
-        { num: 26, sym: "Fe", cn: "鐵", wt: 55.845, state: "固態" },
-        { num: 29, sym: "Cu", cn: "銅", wt: 63.546, state: "固態" },
-        { num: 30, sym: "Zn", cn: "鋅", wt: 65.38, state: "固態" },
-        { num: 47, sym: "Ag", cn: "銀", wt: 107.87, state: "固態" },
-        { num: 53, sym: "I", cn: "碘", wt: 126.90, state: "固態" },
-        { num: 79, sym: "Au", cn: "金", wt: 196.97, state: "固態" },
-        { num: 80, sym: "Hg", cn: "汞", wt: 200.59, state: "液態" },
-        { num: 82, sym: "Pb", cn: "鉛", wt: 207.2, state: "固態" },
-        { num: 92, sym: "U", cn: "鈾", wt: 238.03, state: "固態" },
-        { num: 118, sym: "Og", cn: "鿫", wt: 294, state: "氣態/未知" }
-    ];
-
-    // 線上 API 狀態中文翻譯對照
-    const stateTranslation = {
-        'gas': '氣態',
-        'liquid': '液態',
-        'solid': '固態',
-        'synthetic': '人造元素'
-    };
-
-    const queryBtn = document.getElementById('queryBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const statusMsg = document.getElementById('statusMessage');
-    const apiSearchBtn = document.getElementById('apiSearchBtn');
-    const apiResultContainer = document.getElementById('apiResultContainer');
-
-    // 功能一：輸入代號或中文，先找出目標，然後優先發送 fetch 向線上 API 查詢詳細數據
-    queryBtn.addEventListener('click', () => {
-        const inputVal = document.getElementById('searchQuery').value.trim().toLowerCase();
-        
-        if (!inputVal) {
-            showStatus('⚠️ 請先輸入元素符號（如 Fe）或中文名稱（如 鐵）！', 'orange');
-            return;
-        }
-
-        // 步驟 1: 先在本地對照表中識別該元素
-        const matchedElement = elementDatabase.find(el => 
-            el.sym.toLowerCase() === inputVal || 
-            el.cn === inputVal ||
-            el.cn.includes(inputVal)
-        );
-
-        if (!matchedElement) {
-            clearForm();
-            showStatus('❌ 找不到符合的元素代號或中文名稱，請重新輸入。', 'red');
-            return;
-        }
-
-        queryBtn.disabled = true;
-        showStatus('🔍 正在連線線上週期表 API...', 'gray');
-
-        // 步驟 2: 呼叫免費開源的線上週期表資料庫 API (依據原子序)
-        fetch(`https://neelpatel05.pythonanywhere.com/element/atomicnumber/${matchedElement.num}`)
-        .then(res => {
-            if (!res.ok) throw new Error('線上資料庫無回應');
-            return res.json();
-        })
-        .then(apiData => {
-            // 成功取得線上資料：進行渲染與欄位自動帶入
-            document.getElementById('atomicNumber').value = apiData.atomicNumber;
-            document.getElementById('name').value = `${matchedElement.cn} (${apiData.symbol})`;
+        // 功能一：自建 API 查詢 1~118 號元素資料並自動填表
+        queryBtn.addEventListener('click', () => {
+            const inputVal = document.getElementById('searchQuery').value.trim();
             
-            // 處理線上原子量 (部分元素帶有不確定度括號，予以保留)
-            document.getElementById('atomicWeight').value = apiData.atomicMass;
-            
-            // 處理線上常溫常壓狀態 (英文轉中文翻譯)
-            const rawState = apiData.standardState ? apiData.standardState.toLowerCase() : '';
-            document.getElementById('state').value = stateTranslation[rawState] || matchedElement.state;
-
-            submitBtn.disabled = false; // 開啟送出按鈕
-            showStatus(`✨ 成功由線上 API 取得元素數據：${matchedElement.cn}！`, 'green');
-        })
-        .catch(err => {
-            // 備援機制：API 連線失敗時，自動採用本地資料庫數據填入
-            console.warn('線上 API 連線失敗，啟動本地備援機制：', err);
-            
-            document.getElementById('atomicNumber').value = matchedElement.num;
-            document.getElementById('name').value = `${matchedElement.cn} (${matchedElement.sym})`;
-            document.getElementById('atomicWeight').value = matchedElement.wt;
-            document.getElementById('state').value = matchedElement.state;
-            
-            submitBtn.disabled = false;
-            showStatus(`⚠️ 線上 API 離線，已自動啟動本地備援資料填入！`, 'orange');
-        })
-        .finally(() => {
-            queryBtn.disabled = false;
-        });
-    });
-
-    // 功能二：送出表單至 GAS (POST 請求)
-    document.getElementById('elementForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        submitBtn.disabled = true;
-        showStatus('⏳ 正在連線寫入試算表...', 'gray');
-
-        // 包裝傳輸資料
-        const payload = {
-            atomicNumber: document.getElementById('atomicNumber').value,
-            name: document.getElementById('name').value,
-            atomicWeight: document.getElementById('atomicWeight').value,
-            state: document.getElementById('state').value
-        };
-
-        // 發送 POST 請求至 GAS Web App 網址
-        fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('伺服器無回應');
-            return res.json();
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                showStatus('🎉 成功！資料已順利寫入 Google 試算表！', 'green');
-                clearForm();
-                document.getElementById('searchQuery').value = '';
-            } else {
-                throw new Error(data.message || '寫入失敗');
-            }
-        })
-        .catch(err => {
-            console.error('API Error:', err);
-            showStatus('❌ 寫入失敗，請確認您的 GAS 部署權限是否設為「所有人 (Anyone)」。', 'red');
-            submitBtn.disabled = false;
-        });
-    });
-
-    // 功能三：呼召 GAS GET API 線上查詢試算表資料
-    apiSearchBtn.addEventListener('click', () => {
-        const queryVal = document.getElementById('apiSearchQuery').value.trim();
-        
-        apiResultContainer.style.display = 'block';
-        apiResultContainer.innerHTML = '🔍 正在從試算表即時讀取資料...';
-        apiSearchBtn.disabled = true;
-
-        // 組合網址，若有查詢關鍵字則帶上參數 ?q=
-        const fetchUrl = queryVal ? `${GAS_URL}?q=${encodeURIComponent(queryVal)}` : GAS_URL;
-
-        fetch(fetchUrl)
-        .then(res => {
-            if (!res.ok) throw new Error('連線失敗');
-            return res.json();
-        })
-        .then(data => {
-            if (data.status === 'error') throw new Error(data.message);
-            
-            if (data.length === 0) {
-                apiResultContainer.innerHTML = '📭 試算表中沒有符合的建檔資料。';
+            if (!inputVal) {
+                showStatus('⚠️ 請先輸入元素符號（如 Fe）或中文名稱（如 鐵）！', 'amber');
                 return;
             }
 
-            // 渲染資料清單
-            apiResultContainer.innerHTML = '';
-            data.forEach(item => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'result-item';
-                itemDiv.innerHTML = `<strong>${item.name}</strong> (原子序: ${item.atomicNumber}) | 原子量: ${item.atomicWeight} | 狀態: ${item.state}`;
-                apiResultContainer.appendChild(itemDiv);
+            queryBtn.disabled = true;
+            showStatus('🔍 正在向自建線上資料庫查詢元素...', 'gray');
+
+            // 呼叫自建的 GAS 118 官方元素庫，附帶 type=master 參數
+            const fetchUrl = `${GAS_URL}?type=master&q=${encodeURIComponent(inputVal)}`;
+
+            fetch(fetchUrl)
+            .then(res => {
+                if (!res.ok) throw new Error('伺服器無回應');
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'error') throw new Error(data.message);
+
+                if (!data || data.length === 0) {
+                    clearForm();
+                    showStatus('❌ 自建資料庫中找不到此元素，請檢查拼字。', 'red');
+                    return;
+                }
+
+                // 成功取得自建試算表「元素資料庫」分頁的官方數據，並自動帶入表單中
+                const matchedElement = data[0];
+                document.getElementById('atomicNumber').value = matchedElement.atomicNumber;
+                document.getElementById('name').value = `${matchedElement.name} (${matchedElement.symbol})`;
+                document.getElementById('atomicWeight').value = matchedElement.atomicWeight;
+                document.getElementById('state').value = matchedElement.state;
+                
+                submitBtn.disabled = false; // 開啟送出按鈕
+                showStatus(`✨ 查詢成功！已帶入元素：${matchedElement.name}`, 'emerald');
+            })
+            .catch(err => {
+                console.error('API Error:', err);
+                showStatus('❌ 查詢失敗！請確認是否已建立「元素資料庫」工作表，且 GAS 已更新部署為新版本。', 'red');
+            })
+            .finally(() => {
+                queryBtn.disabled = false;
             });
-        })
-        .catch(err => {
-            console.error('GET API Error:', err);
-            apiResultContainer.innerHTML = '<span style="color: #dc2626;">❌ 無法獲取試算表資料，請確認 GAS 是否重新部署並設為「新版本」。</span>';
-        })
-        .finally(() => {
-            apiSearchBtn.disabled = false;
         });
-    });
 
-    function showStatus(text, color) {
-        statusMsg.innerText = text;
-        if (color === 'green') statusMsg.style.color = '#059669';
-        else if (color === 'red') statusMsg.style.color = '#dc2626';
-        else if (color === 'orange') statusMsg.style.color = '#d97706';
-        else statusMsg.style.color = '#4b5563';
-    }
+        // 功能二：送出表單至 GAS (POST 請求)
+        document.getElementById('elementForm').addEventListener('submit', (e) => {
+            e.preventDefault();
 
-    function clearForm() {
-        document.getElementById('atomicNumber').value = '';
-        document.getElementById('name').value = '';
-        document.getElementById('atomicWeight').value = '';
-        document.getElementById('state').value = '';
-        submitBtn.disabled = true;
-    }
-</script>
+            submitBtn.disabled = true;
+            showStatus('⏳ 正在連線寫入試算表...', 'gray');
+
+            const payload = {
+                atomicNumber: document.getElementById('atomicNumber').value,
+                name: document.getElementById('name').value,
+                atomicWeight: document.getElementById('atomicWeight').value,
+                state: document.getElementById('state').value
+            };
+
+            // 發送 POST 請求至 GAS 寫入第一個工作表
+            fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('伺服器無回應');
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    showStatus('🎉 成功！資料已順利寫入 Google 試算表第一頁！', 'emerald');
+                    clearForm();
+                    document.getElementById('searchQuery').value = '';
+                } else {
+                    throw new Error(data.message || '寫入失敗');
+                }
+            })
+            .catch(err => {
+                console.error('API Error:', err);
+                showStatus('❌ 寫入失敗，請確認您的 GAS 部署權限是否設為「所有人 (Anyone)」。', 'red');
+                submitBtn.disabled = false;
+            });
+        });
+
+        // 功能三：呼叫 GAS GET API 線上查詢第一個工作表（歷史提交紀錄）
+        apiSearchBtn.addEventListener('click', () => {
+            const queryVal = document.getElementById('apiSearchQuery').value.trim();
+            
+            apiResultContainer.classList.remove('hidden');
+            apiResultContainer.innerHTML = '<div class="text-sm text-gray-500 py-2">🔍 正在即時自雲端讀取歷史紀錄...</div>';
+            apiSearchBtn.disabled = true;
+
+            // 預設不帶 type 即為 history 歷史查詢
+            const fetchUrl = queryVal ? `${GAS_URL}?q=${encodeURIComponent(queryVal)}` : GAS_URL;
+
+            fetch(fetchUrl)
+            .then(res => {
+                if (!res.ok) throw new Error('連線失敗');
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'error') throw new Error(data.message);
+                
+                if (data.length === 0) {
+                    apiResultContainer.innerHTML = '<div class="text-sm text-gray-500 py-2">📭 試算表中目前沒有相符的歷史建檔紀錄。</div>';
+                    return;
+                }
+
+                // 渲染歷史數據清單
+                apiResultContainer.innerHTML = '';
+                data.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'py-2.5 border-b border-gray-200 last:border-0 flex justify-between items-center text-sm';
+                    itemDiv.innerHTML = `
+                        <div class="font-semibold text-gray-800">${item.name}</div>
+                        <div class="text-xs text-gray-500 space-x-2">
+                            <span>序: ${item.atomicNumber}</span>
+                            <span>|</span>
+                            <span>重: ${item.atomicWeight}</span>
+                            <span>|</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] bg-indigo-50 text-indigo-600 font-bold">${item.state}</span>
+                        </div>
+                    `;
+                    apiResultContainer.appendChild(itemDiv);
+                });
+            })
+            .catch(err => {
+                console.error('GET API Error:', err);
+                apiResultContainer.innerHTML = '<div class="text-sm text-red-600 font-semibold py-2">❌ 無法獲取試算表資料，請確認 GAS 網址是否正確並已發布新版本。</div>';
+            })
+            .finally(() => {
+                apiSearchBtn.disabled = false;
+            });
+        });
+
+        // 輔助函式：狀態訊息控制
+        function showStatus(text, type) {
+            statusMsg.innerText = text;
+            statusMsg.className = 'text-sm font-semibold text-center min-h-[20px] transition-all duration-300';
+            if (type === 'emerald') {
+                statusMsg.classList.add('text-emerald-600');
+            } else if (type === 'red') {
+                statusMsg.classList.add('text-red-600');
+            } else if (type === 'amber') {
+                statusMsg.classList.add('text-amber-600');
+            } else {
+                statusMsg.classList.add('text-gray-500');
+            }
+        }
+
+        // 輔助函式：重置自動填入欄位
+        function clearForm() {
+            document.getElementById('atomicNumber').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('atomicWeight').value = '';
+            document.getElementById('state').value = '';
+            submitBtn.disabled = true;
+        }
+    </script>
 
 </body>
 </html>
