@@ -5,25 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>元素線上 API 查詢系統</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
-        input, button { padding: 10px; font-size: 16px; margin-top: 10px; width: 100%; box-sizing: border-box; }
-        #result { margin-top: 20px; padding: 15px; border: 1px solid #ccc; background: #f9f9f9; display: none; }
-        .error-message { color: #e91e63; font-weight: bold; font-size: 18px; }
+        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; background-color: #f4f6f9; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #333; text-align: center; }
+        input, button { padding: 12px; font-size: 16px; margin-top: 15px; width: 100%; box-sizing: border-box; border-radius: 6px; }
+        input { border: 1px solid #ccc; }
+        button { background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #0056b3; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 6px; border: 1px solid #ddd; background: #fafafa; display: none; line-height: 1.6; }
+        .error-message { color: #e91e63; font-weight: bold; font-size: 16px; margin: 0; }
     </style>
 </head>
 <body>
 
-    <h2>化學元素查詢 (API 版)</h2>
-    <p>請輸入元素符號 (例如: H, O, FE, AU)：</p>
-    
-    <input type="text" id="elementInput" placeholder="輸入元素符號...">
-    <button onclick="queryElement()">查詢並寫入試算表</button>
+    <div class="card">
+        <h2>化學元素查詢 (API 版)</h2>
+        <p style="color: #666; font-size: 14px; text-align: center;">請輸入元素符號 (例如: H, O, FE, AU, U)</p>
+        
+        <input type="text" id="elementInput" placeholder="輸入元素符號，如：He">
+        <button onclick="queryElement()">查詢並寫入試算表</button>
 
-    <div id="result"></div>
+        <div id="result"></div>
+    </div>
 
     <script>
-        // ★ 替換為你剛剛部署 GAS 產生的網址 ★
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzlmnHGMCutz_n7WNJs8K6oygKEQtvDLO0U5X0815HwJYtXs_eoSQQU6aGkx4NHRwMa/exec'; 
+        // ★ 貼上新部署得到的 Google Apps Script 網頁應用程式網址 ★
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyzBbEBpnjXszAoCAYmATakPcTXua2e6KoOKEmDtvv9Mnf8E5hMWjppzRAMc2IJ-aHg/exec'; 
 
         async function queryElement() {
             const query = document.getElementById('elementInput').value.trim();
@@ -35,14 +42,13 @@
             }
 
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = "正在透過 API 查詢並寫入試算表...";
+            resultDiv.innerHTML = "正在向 API 系統查詢並紀錄至試算表...";
 
             try {
-                // 使用 text/plain 技巧避免瀏覽器的 CORS Preflight (OPTIONS) 請求錯誤
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'text/plain;charset=utf-8', 
+                        'Content-Type': 'text/plain;charset=utf-8'
                     },
                     body: JSON.stringify({ query: query })
                 });
@@ -52,14 +58,13 @@
                 if (json.success) {
                     const data = json.data;
                     resultDiv.innerHTML = `
-                        <h3>查詢成功</h3>
+                        <h3 style="color: #28a745; margin-top: 0;">查詢成功</h3>
                         <p><strong>名稱：</strong> ${data.name}</p>
                         <p><strong>原子序：</strong> ${data.atomicNumber}</p>
                         <p><strong>原子量：</strong> ${data.atomicMass}</p>
                         <p><strong>常溫常壓狀態：</strong> ${data.state}</p>
                     `;
                 } else {
-                    // 顯示帶有 ❌ 的錯誤提示
                     resultDiv.innerHTML = `<p class="error-message">${json.message}</p>`;
                 }
             } catch (error) {
