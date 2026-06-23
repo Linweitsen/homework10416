@@ -1,1 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>元素資料建檔工具</title>
+    <style>
+        /* 極簡排版 */
+        body { font-family: sans-serif; padding: 20px; max-width: 400px; }
+        div { margin-bottom: 10px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 5px; box-sizing: border-box; }
+        button { padding: 8px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
 
+    <h2>新增元素資料</h2>
+    <form id="elementForm">
+        <div>
+            <label>原子序：</label>
+            <input type="number" id="atomicNumber" required>
+        </div>
+        <div>
+            <label>原子量：</label>
+            <input type="number" step="0.001" id="atomicWeight" required>
+        </div>
+        <div>
+            <label>常溫常壓狀態：</label>
+            <input type="text" id="state" placeholder="例如：固態、液態、氣態" required>
+        </div>
+        <div>
+            <label>名稱：</label>
+            <input type="text" id="name" placeholder="例如：氫 (H)" required>
+        </div>
+        <button type="submit" id="submitBtn">送出寫入試算表</button>
+    </form>
+
+    <script>
+        // 請將下方引號內的網址替換為你剛剛複製的 GAS Web App URL
+        const GAS_URL = '請貼上_你的_GAS_Web_App_URL';
+
+        document.getElementById('elementForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // 阻止表單預設重整行為
+            
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = "寫入中...";
+
+            // 收集表單資料
+            const payload = {
+                atomicNumber: document.getElementById('atomicNumber').value,
+                atomicWeight: document.getElementById('atomicWeight').value,
+                state: document.getElementById('state').value,
+                name: document.getElementById('name').value
+            };
+
+            // 使用原生 fetch 送出 POST 請求
+            fetch(GAS_URL, {
+                method: 'POST',
+                // 注意：這裡必須使用 text/plain，否則瀏覽器會發送 CORS Preflight (OPTIONS) 請求，GAS 會攔截報錯
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('資料成功寫入試算表！');
+                    document.getElementById('elementForm').reset();
+                } else {
+                    alert('寫入失敗：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('發生錯誤，請檢查 Console 紀錄。');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = "送出寫入試算表";
+            });
+        });
+    </script>
+</body>
+</html>
