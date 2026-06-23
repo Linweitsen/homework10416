@@ -3,79 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>元素資料建檔與查詢工具</title>
+    <title>純 API 元素查詢工具</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 400px; }
-        div { margin-bottom: 10px; }
-        label { display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 5px; box-sizing: border-box; }
-        button { padding: 8px 15px; cursor: pointer; margin-top: 5px; }
-        hr { margin: 30px 0; border: 0; border-top: 1px solid #ccc; }
-        .result-box { background: #f9f9f9; padding: 10px; margin-top: 10px; border-radius: 5px; }
+        /* 最基本的清楚排版 */
+        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+        .search-box { display: flex; gap: 5px; margin-bottom: 20px; }
+        input { flex: 1; padding: 8px; font-size: 16px; }
+        button { padding: 8px 15px; cursor: pointer; font-size: 16px; }
+        .result-card { background: #f0f0f0; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+        .error { color: red; }
     </style>
 </head>
 <body>
 
-    <h2>新增元素資料</h2>
-    <form id="elementForm">
-        <button type="submit" id="submitBtn">送出寫入試算表</button>
-    </form>
-
-    <hr>
-
-    <h2>查詢元素</h2>
-    <div>
-        <input type="text" id="searchInput" placeholder="輸入元素名稱或原子序 (留空則查詢全部)">
-        <button type="button" id="searchBtn">使用 API 查詢</button>
+    <h2>🔍 元素 API 查詢器</h2>
+    
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="輸入名稱或原子序 (留空查全部)">
+        <button id="searchBtn">查詢</button>
     </div>
-    <div id="searchResult" class="result-box">查詢結果會顯示在這裡...</div>
+
+    <div id="resultContainer">
+        <p style="color: gray;">請輸入關鍵字開始查詢...</p>
+    </div>
 
     <script>
-        // 替換為你的 GAS Web App URL
-        const GAS_URL = 'https://script.google.com/macros/library/d/1nshAeKLeBestpNEHFtfYFRXuFQRWIF8sPaErYm8-D3rmOzz7FXw2KI28/2';
+        // 【請在此替換你的 GAS Web App URL】
+        const API_URL = '請將你的_GAS_網址_貼在這裡';
 
-        // --- 寫入功能 (POST) 保持原樣 ---
-        document.getElementById('elementForm').addEventListener('submit', function(e) {
-            // ... (保留你原本的 POST 程式碼) ...
-        });
-
-        // --- 查詢功能 (GET) 新增 ---
-        document.getElementById('searchBtn').addEventListener('click', function() {
+        document.getElementById('searchBtn').addEventListener('click', () => {
             const queryWord = document.getElementById('searchInput').value.trim();
-            const resultBox = document.getElementById('searchResult');
+            const container = document.getElementById('resultContainer');
             const btn = document.getElementById('searchBtn');
             
+            // 狀態變更為查詢中
+            container.innerHTML = '<p>讀取 API 資料中...</p>';
             btn.disabled = true;
-            resultBox.innerText = "正在透過 API 查詢中...";
 
-            // 組合 API 網址，將關鍵字附加在 URL 後方作為參數
-            const apiUrl = queryWord ? `${GAS_URL}?query=${encodeURIComponent(queryWord)}` : GAS_URL;
+            // 如果有輸入字，則將其編碼並加到網址後方當作 GET 參數
+            const fetchUrl = queryWord ? `${API_URL}?q=${encodeURIComponent(queryWord)}` : API_URL;
 
-            // 原生 fetch GET 請求 (不寫 method 預設就是 GET)
-            fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => {
-                if (data.length === 0) {
-                    resultBox.innerText = "找不到符合的元素資料。";
-                    return;
-                }
-                
-                // 清空並組合結果
-                resultBox.innerHTML = ""; 
-                data.forEach(item => {
-                    resultBox.innerHTML += `<p><strong>${item.name}</strong><br>
-                                            原子序: ${item.atomicNumber} | 
-                                            原子量: ${item.atomicWeight} | 
-                                            狀態: ${item.state}</p>`;
+            // 發送原生 GET 請求
+            fetch(fetchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    container.innerHTML = ''; // 清空畫面
+                    
+                    // 錯誤處理
+                    if (data.error) {
+                        container.innerHTML = `<p class="error">API 錯誤：${data.error}</p>`;
+                        return;
+                    }
+
+                    // 查無資料
+                    if (data.length === 0) {
+                        container.innerHTML = '<p>查無符合的元素。</p>';
+                        return;
+                    }
+
+                    // 渲染資料
+                    data.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'result-card';
+                        card.innerHTML = `
+                            <strong>${item.name || '未知名稱'}</strong> (原子序: ${item.atomicNumber})<br>
+                            <small>原子量: ${item.atomicWeight} | 狀態: ${item.state}</small>
+                        `;
+                        container.appendChild(card);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    container.innerHTML = '<p class="error">連線失敗，請檢查 API 網址與 Console 紀錄。</p>';
+                })
+                .finally(() => {
+                    // 恢復按鈕狀態
+                    btn.disabled = false;
                 });
-            })
-            .catch(error => {
-                console.error('API 錯誤:', error);
-                resultBox.innerText = "查詢失敗，請檢查網頁 Console。";
-            })
-            .finally(() => {
-                btn.disabled = false;
-            });
         });
     </script>
 </body>
