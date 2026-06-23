@@ -14,9 +14,39 @@
         button:hover { background-color: #0056b3; }
         .refresh-btn { background-color: #28a745; margin-top: 10px; }
         .refresh-btn:hover { background-color: #218838; }
-        #result { margin-top: 20px; padding: 15px; border-radius: 6px; border: 1px solid #ddd; background: #fafafa; display: none; line-height: 1.6; }
-        .error-message { color: #e91e63; font-weight: bold; font-size: 16px; margin: 0; }
+        #result { margin-top: 20px; display: none; }
+        .error-message { color: #e91e63; font-weight: bold; font-size: 16px; margin: 0; padding: 15px; border: 1px solid #ffcdd2; background: #ffebee; border-radius: 6px; }
         
+        /* 查詢結果的元素圖卡樣式 */
+        .element-card {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,123,255,0.1);
+        }
+        .element-symbol-box {
+            background: #007bff;
+            color: white;
+            width: 90px;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        .element-symbol-box .number { font-size: 14px; opacity: 0.9; margin-bottom: 2px; }
+        .element-symbol-box .symbol { font-size: 36px; font-weight: bold; line-height: 1; }
+        .element-details { flex-grow: 1; }
+        .element-details h3 { margin: 0 0 10px 0; color: #333; font-size: 20px; }
+        .element-details p { margin: 6px 0; font-size: 15px; color: #555; }
+        .element-details strong { color: #222; }
+
         /* 原生表格的專屬樣式 */
         .sheet-container { max-height: 350px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; margin-top: 15px; background: #fff; }
         .native-table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -60,7 +90,8 @@
         };
 
         async function queryElement() {
-            const query = document.getElementById('elementInput').value.trim();
+            const queryInput = document.getElementById('elementInput').value.trim();
+            const query = queryInput.toUpperCase();
             const resultDiv = document.getElementById('result');
             
             if (!query) {
@@ -69,25 +100,34 @@
             }
 
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = "正在向 API 系統查詢並紀錄至試算表...";
+            resultDiv.innerHTML = "<div style='padding: 15px; text-align: center; color: #666;'>正在向 API 系統查詢並紀錄至試算表...</div>";
 
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ query: query })
+                    body: JSON.stringify({ query: queryInput })
                 });
 
                 const json = await response.json();
 
                 if (json.success) {
                     const data = json.data;
+                    
+                    // 【顯示元素資訊】升級為專屬的元素圖卡設計
                     resultDiv.innerHTML = `
-                        <h3 style="color: #28a745; margin-top: 0;">查詢成功</h3>
-                        <p><strong>名稱：</strong> ${data.name}</p>
-                        <p><strong>原子序：</strong> ${data.atomicNumber}</p>
-                        <p><strong>原子量：</strong> ${data.atomicMass}</p>
-                        <p><strong>常溫常壓狀態：</strong> ${data.state}</p>
+                        <div class="element-card">
+                            <div class="element-symbol-box">
+                                <div class="number">${data.atomicNumber}</div>
+                                <div class="symbol">${query}</div>
+                            </div>
+                            <div class="element-details">
+                                <h3>${data.name}</h3>
+                                <p><strong>原子序：</strong> ${data.atomicNumber}</p>
+                                <p><strong>原子量：</strong> ${data.atomicMass}</p>
+                                <p><strong>常溫常壓狀態：</strong> ${data.state}</p>
+                            </div>
+                        </div>
                     `;
                     // 查詢成功後延遲 1.5 秒更新原生表格 (等待後端寫入完畢)
                     setTimeout(refreshSheet, 1500);
@@ -99,63 +139,4 @@
             }
         }
 
-        // 使用其他方法：透過 Google Visualization API 解析試算表並生成原生表格
-        async function refreshSheet() {
-            const container = document.getElementById('sheetData');
-            
-            // 從一般共用連結中自動萃取出試算表 ID
-            const match = SHEET_URL.match(/\/d\/([a-zA-Z0-9-_]+)/);
-            if (!match) {
-                if (SHEET_URL !== '你的_試算表_共用連結') {
-                    container.innerHTML = '<div style="padding: 15px; color: red;">無法解析試算表網址，請確認格式。</div>';
-                }
-                return;
-            }
-            const sheetId = match[1];
-            
-            // Google Visualization API 網址 (回傳類似 JSON 的資料)
-            const gvizUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
-
-            try {
-                container.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">載入資料中...</div>';
-                
-                const response = await fetch(gvizUrl);
-                const text = await response.text();
-                
-                // 去除前後多餘字元，提取出標準 JSON 字串
-                const jsonString = text.match(/google\.visualization\.Query\.setResponse\(([\s\S\w]+)\);/)[1];
-                const data = JSON.parse(jsonString);
-
-                // 組合 HTML 原生表格
-                let html = '<table class="native-table"><thead><tr>';
-                
-                // 產生表頭
-                data.table.cols.forEach(col => {
-                    html += `<th>${col.label || col.id || ''}</th>`;
-                });
-                html += '</tr></thead><tbody>';
-
-                // 產生資料列 (這裡使用 reverse() 將最新的查詢紀錄顯示在最上面)
-                const rows = data.table.rows;
-                [...rows].reverse().forEach(row => {
-                    html += '<tr>';
-                    const cells = row.c || [];
-                    cells.forEach(cell => {
-                        // 優先顯示格式化過的數值 (cell.f)，若無則顯示原始值 (cell.v)
-                        const cellValue = cell ? (cell.f || cell.v || '') : '';
-                        html += `<td>${cellValue}</td>`;
-                    });
-                    html += '</tr>';
-                });
-                html += '</tbody></table>';
-
-                container.innerHTML = html;
-            } catch (error) {
-                container.innerHTML = `<div style="padding: 15px; color: red;">❌ 無法讀取試算表。<br>請確保您的試算表共用權限已設為「知道連結的人皆可查看」。</div>`;
-                console.error("試算表讀取錯誤:", error);
-            }
-        }
-    </script>
-
-</body>
-</html>
+        // 使用其他方法：透過 Google Visualization API 解析試算表
