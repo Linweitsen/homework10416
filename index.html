@@ -87,7 +87,7 @@
     // ⚠️ 請將下方的網址替換為您在 Apps Script 部署得到的 Web App URL 網址 (結尾必為 /exec)
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxOAId7fekRrPv8Z9PGsrzGAm5kEeQOQxwrqc6Qjw9O-9iA-w0gDwul877FUgk0UJ__/exec';
 
-    // 極簡內建元素對照資料庫（涵蓋常見與基礎元素，可自行在此擴充）
+    // 極簡內建元素對照資料庫（涵蓋常見與基礎元素，已加入 118 號元素「鿫」）
     const elementDatabase = [
         { num: 1, sym: "H", cn: "氫", wt: 1.008, state: "氣態" },
         { num: 2, sym: "He", cn: "氦", wt: 4.0026, state: "氣態" },
@@ -117,7 +117,8 @@
         { num: 79, sym: "Au", cn: "金", wt: 196.97, state: "固態" },
         { num: 80, sym: "Hg", cn: "汞", wt: 200.59, state: "液態" },
         { num: 82, sym: "Pb", cn: "鉛", wt: 207.2, state: "固態" },
-        { num: 92, sym: "U", cn: "鈾", wt: 238.03, state: "固態" }
+        { num: 92, sym: "U", cn: "鈾", wt: 238.03, state: "固態" },
+        { num: 118, sym: "Og", cn: "鿫", wt: 294, state: "氣態/未知" }
     ];
 
     const queryBtn = document.getElementById('queryBtn');
@@ -199,7 +200,7 @@
         });
     });
 
-    // 功能三：呼叫 GAS GET API 線上查詢試算表資料
+    // 功能三：呼召 GAS GET API 線上查詢試算表資料
     apiSearchBtn.addEventListener('click', () => {
         const queryVal = document.getElementById('apiSearchQuery').value.trim();
         
@@ -260,3 +261,10 @@
 
 </body>
 </html>
+```
+eof
+
+### 🛠️ 變更摘要
+在 **Canvas** 文件的內建對照資料庫 `elementDatabase` 陣列末端，我已為您成功補上 **「鿫（Og）」** 的資料：
+```javascript
+{ num: 118, sym: "Og", cn: "鿫", wt: 294, state: "氣態/未知" }
