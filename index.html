@@ -25,11 +25,12 @@
         <input type="text" id="elementInput" placeholder="輸入元素符號，如：He">
         <button onclick="queryElement()">查詢並寫入試算表</button>
 
+        <!-- 這裡就是用來顯示查詢結果的區塊 -->
         <div id="result"></div>
     </div>
 
     <script>
-        // ★ 貼上新部署得到的 Google Apps Script 網頁應用程式網址 ★
+        // ★ 請在這裡貼上新部署得到的 Google Apps Script 網頁應用程式網址 ★
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxP_Apql41mYl63jQc8V51b462kGotIWzwLwGE3sd5YggTu5zy2WhQO6q92pypPQYWS/exec'; 
 
         async function queryElement() {
@@ -57,6 +58,7 @@
 
                 if (json.success) {
                     const data = json.data;
+                    // 【顯示元素資訊】這裡會將 GAS 回傳的資料顯示在畫面上
                     resultDiv.innerHTML = `
                         <h3 style="color: #28a745; margin-top: 0;">查詢成功</h3>
                         <p><strong>名稱：</strong> ${data.name}</p>
