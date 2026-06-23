@@ -8,6 +8,7 @@
         body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
         input, button { padding: 10px; font-size: 16px; margin-top: 10px; width: 100%; box-sizing: border-box; }
         #result { margin-top: 20px; padding: 15px; border: 1px solid #ccc; background: #f9f9f9; display: none; }
+        .error-message { color: #e91e63; font-weight: bold; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -22,7 +23,7 @@
 
     <script>
         // ★ 替換為你剛剛部署 GAS 產生的網址 ★
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz_P_ccwlhiYf9BVLzzNY5xSgR89bHYzOEwniMii6fnoCKVDbhOnlbHZbZ9GRWa9Hqr/exec'; 
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwU0cTZi3y1x_Ti0r3OLDfpppx2Q2DKVIHG9S23rfSeprdeIcD0CnANYR8wC6qH7-PW/exec'; 
 
         async function queryElement() {
             const query = document.getElementById('elementInput').value.trim();
@@ -58,10 +59,11 @@
                         <p><strong>常溫常壓狀態：</strong> ${data.state}</p>
                     `;
                 } else {
-                    resultDiv.innerHTML = `<p style="color:red;">${json.message}</p>`;
+                    // 顯示帶有 ❌ 的錯誤提示
+                    resultDiv.innerHTML = `<p class="error-message">${json.message}</p>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<p style="color:red;">發生錯誤：${error}</p>`;
+                resultDiv.innerHTML = `<p class="error-message">❌ 發生連線錯誤：${error}</p>`;
             }
         }
     </script>
