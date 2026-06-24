@@ -3,140 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>元素線上 API 查詢系統</title>
+    <title>化學元素查詢系統</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; background-color: #f4f6f9; }
-        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { margin-top: 0; color: #333; text-align: center; }
-        input, button { padding: 12px; font-size: 16px; margin-top: 15px; width: 100%; box-sizing: border-box; border-radius: 6px; }
-        input { border: 1px solid #ccc; }
-        button { background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        body { font-family: sans-serif; padding: 20px; max-width: 450px; margin: auto; background-color: #f9f9f9; color: #333; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-top: 0; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
         button:hover { background-color: #0056b3; }
-        .refresh-btn { background-color: #28a745; margin-top: 10px; }
-        .refresh-btn:hover { background-color: #218838; }
-        #result { margin-top: 20px; display: none; }
-        .error-message { color: #e91e63; font-weight: bold; font-size: 16px; margin: 0; padding: 15px; border: 1px solid #ffcdd2; background: #ffebee; border-radius: 6px; }
-        
-        /* 查詢結果的元素圖卡樣式 */
-        .element-card {
-            display: flex;
-            align-items: center;
-            background: #fff;
-            border: 2px solid #007bff;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 10px rgba(0,123,255,0.1);
-        }
-        .element-symbol-box {
-            background: #007bff;
-            color: white;
-            width: 90px;
-            height: 90px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-radius: 8px;
-            margin-right: 20px;
-            flex-shrink: 0;
-        }
-        .element-symbol-box .number { font-size: 14px; opacity: 0.9; margin-bottom: 2px; }
-        .element-symbol-box .symbol { font-size: 36px; font-weight: bold; line-height: 1; }
-        .element-details { flex-grow: 1; }
-        .element-details h3 { margin: 0 0 10px 0; color: #333; font-size: 20px; }
-        .element-details p { margin: 6px 0; font-size: 15px; color: #555; }
-        .element-details strong { color: #222; }
-
-        /* 原生表格的專屬樣式 */
-        .sheet-container { max-height: 350px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; margin-top: 15px; background: #fff; }
-        .native-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .native-table th, .native-table td { border-bottom: 1px solid #eee; padding: 12px 10px; text-align: left; }
-        .native-table th { background-color: #f8f9fa; color: #333; position: sticky; top: 0; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1); }
-        .native-table tr:hover { background-color: #f1f7ff; }
+        #result { margin-top: 20px; padding: 15px; border: 1px solid #ddd; background-color: #f1f1f1; border-radius: 4px; display: none; line-height: 1.6; }
+        .error { color: #d9534f; font-weight: bold; }
+        .success-title { color: #28a745; margin-top: 0; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>化學元素查詢 (API 版)</h2>
-        <p style="color: #666; font-size: 14px; text-align: center;">請輸入元素符號 (例如: H, O, FE, AU, U)</p>
+    <div class="container">
+        <h2>化學元素查詢</h2>
+        <p style="font-size: 14px; color: #666; text-align: center;">請輸入符號（例如：H, O, Fe, Au）</p>
         
-        <input type="text" id="elementInput" placeholder="輸入元素符號，如：He">
-        <button onclick="queryElement()">查詢並寫入試算表</button>
+        <input type="text" id="elementInput" placeholder="輸入符號...">
+        <button onclick="query()">查詢</button>
 
         <div id="result"></div>
     </div>
 
-    <div class="card">
-        <h2>查詢紀錄試算表</h2>
-        <p style="color: #666; font-size: 14px; text-align: center;">原生表格顯示 (已避免 iframe 阻擋問題)</p>
-        
-        <!-- 替換 iframe，改用 div 容器來裝載我們生成的原生表格 -->
-        <div id="sheetData" class="sheet-container">
-            <div style="padding: 15px; text-align: center; color: #888;">尚未載入資料...</div>
-        </div>
-        <button class="refresh-btn" onclick="refreshSheet()">手動重新整理試算表</button>
-    </div>
-
     <script>
-        // ★ 貼上您的 Google Apps Script 網頁應用程式網址 ★
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyaVFGFIyi67vvI3vXfJZ2zuiPFH4keAlTfoyOSqsmTr8zWByw-pDfYgbIQ3NpPs_h6/exec'; 
-        
-        // ★ 貼上您的 Google 試算表共用連結 (請確保權限設定為：知道連結的人皆可查看) ★
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/12Y4yHdO9kdid1nw5N0AW8ZqN5wcR9BMLEpb010ru3ow/edit?usp=sharing';
+        // 🔴 🔴 🔴 請將下方的網址替換成您的 Google Apps Script 網頁應用程式網址 (結尾為 /exec) 🔴 🔴 🔴
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyaVFGFIyi67vvI3vXfJZ2zuiPFH4keAlTfoyOSqsmTr8zWByw-pDfYgbIQ3NpPs_h6/exec";
 
-        window.onload = function() {
-            refreshSheet();
-        };
-
-        async function queryElement() {
-            const queryInput = document.getElementById('elementInput').value.trim();
-            const query = queryInput.toUpperCase();
+        async function query() {
+            const inputVal = document.getElementById('elementInput').value.trim();
             const resultDiv = document.getElementById('result');
             
-            if (!query) {
+            if (!inputVal) {
                 alert("請輸入元素符號！");
                 return;
             }
 
+            if (GAS_URL.includes("請將這段文字替換為您的_GAS_網址")) {
+                alert("⚠️ 錯誤：您還沒有在程式碼中填入您的 GAS_URL 網址！\n請用記事本打開 HTML 檔案，將 GAS_URL 替換為您的真實網址。");
+                return;
+            }
+
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = "<div style='padding: 15px; text-align: center; color: #666;'>正在向 API 系統查詢並紀錄至試算表...</div>";
+            resultDiv.innerHTML = "查詢中，寫入試算表...";
 
             try {
+                // 發送 POST 請求至您的後端 GAS
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ query: queryInput })
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify({ query: inputVal })
                 });
 
                 const json = await response.json();
 
+                // 顯示結果
                 if (json.success) {
                     const data = json.data;
-                    
-                    // 【顯示元素資訊】升級為專屬的元素圖卡設計
                     resultDiv.innerHTML = `
-                        <div class="element-card">
-                            <div class="element-symbol-box">
-                                <div class="number">${data.atomicNumber}</div>
-                                <div class="symbol">${query}</div>
-                            </div>
-                            <div class="element-details">
-                                <h3>${data.name}</h3>
-                                <p><strong>原子序：</strong> ${data.atomicNumber}</p>
-                                <p><strong>原子量：</strong> ${data.atomicMass}</p>
-                                <p><strong>常溫常壓狀態：</strong> ${data.state}</p>
-                            </div>
-                        </div>
+                        <h3 class="success-title">✅ 查詢成功</h3>
+                        <p><strong>名稱：</strong> ${data.name}</p>
+                        <p><strong>原子序：</strong> ${data.atomicNumber}</p>
+                        <p><strong>原子量：</strong> ${data.atomicMass}</p>
+                        <p><strong>常壓狀態：</strong> ${data.state}</p>
                     `;
-                    // 查詢成功後延遲 1.5 秒更新原生表格 (等待後端寫入完畢)
-                    setTimeout(refreshSheet, 1500);
                 } else {
-                    resultDiv.innerHTML = `<p class="error-message">${json.message}</p>`;
+                    resultDiv.innerHTML = `<p class="error">${json.message}</p>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<p class="error-message">❌ 發生連線錯誤：${error}</p>`;
+                resultDiv.innerHTML = `<p class="error">❌ 連線錯誤：無法連接到伺服器。<br><br>請確認您的 GAS 網址正確，且部署存取權限已設為「所有人」。</p>`;
             }
         }
-
-        // 使用其他方法：透過 Google Visualization API 解析試算表
+    </script>
+</body>
+</html>
