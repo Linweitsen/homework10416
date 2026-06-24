@@ -14,6 +14,7 @@
         #result { margin-top: 20px; padding: 15px; border: 1px solid #ddd; background-color: #f1f1f1; border-radius: 4px; display: none; line-height: 1.6; }
         .error { color: #d9534f; font-weight: bold; }
         .success-title { color: #28a745; margin-top: 0; }
+        .debug-info { font-size: 13px; color: #666; background: #fff; padding: 10px; border: 1px dashed #ccc; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -41,13 +42,18 @@
                 return;
             }
 
-            if (GAS_URL.includes("請將這段文字替換為您的_GAS_網址")) {
+            if (GAS_URL.includes("請將這段文字替換為您的_GAS_網址") || GAS_URL === "") {
                 alert("⚠️ 錯誤：您還沒有在程式碼中填入您的 GAS_URL 網址！\n請用記事本打開 HTML 檔案，將 GAS_URL 替換為您的真實網址。");
                 return;
             }
 
+            if (GAS_URL.includes("/edit")) {
+                alert("🚫 網址錯誤：您的網址結尾是 /edit，這是編輯器網址！\n請回 GAS 點擊「部署 > 管理部署作業」，複製結尾是 /exec 的網頁應用程式網址。");
+                return;
+            }
+
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = "查詢中，寫入試算表...";
+            resultDiv.innerHTML = "查詢中，請稍候...";
 
             try {
                 // 發送 POST 請求至您的後端 GAS
@@ -75,7 +81,19 @@
                     resultDiv.innerHTML = `<p class="error">${json.message}</p>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<p class="error">❌ 連線錯誤：無法連接到伺服器。<br><br>請確認您的 GAS 網址正確，且部署存取權限已設為「所有人」。</p>`;
+                console.error("Fetch Error:", error);
+                resultDiv.innerHTML = `
+                    <p class="error">❌ 連線被 Google 伺服器拒絕。</p>
+                    <div class="debug-info">
+                        <strong>真實錯誤訊息：</strong> ${error.message}<br><br>
+                        <strong>👉 唯一解法 (請回 GAS 檢查)：</strong><br>
+                        1. 點擊右上角「部署」>「管理部署作業」<br>
+                        2. 點擊畫筆圖示(編輯)<br>
+                        3. 誰可以存取：<strong>必須選擇「所有人」(Anyone)</strong><br>
+                        4. 版本：<strong>必須選擇「建立新版本」</strong><br>
+                        5. 點擊「部署」，並確認網址沒複製錯！
+                    </div>
+                `;
             }
         }
     </script>
